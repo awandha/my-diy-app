@@ -70,7 +70,9 @@ export default function ChatPage() {
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-600 via-green-500 to-blue-700 text-white text-center py-4 shadow-lg sticky top-0 z-10 flex items-center justify-center gap-2">
         <Lightbulb className="w-6 h-6 text-yellow-300" />
-        <h1 className="text-2xl font-bold tracking-wide">Utak-Atik</h1>
+        <a href="/">
+            <h1 className="text-2xl font-bold tracking-wide">Utak-Atik</h1>
+        </a>
       </header>
 
       {/* Chat messages area */}
