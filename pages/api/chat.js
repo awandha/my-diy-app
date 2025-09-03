@@ -8,14 +8,17 @@ export default async function handler(req, res) {
   try {
     const { messages } = req.body;
 
-    const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+    // const response = await fetch("https://router.huggingface.co/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.HF_API_KEY}`,
+        // "Authorization": `Bearer ${process.env.HF_API_KEY}`,
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "mistralai/Mistral-7B-Instruct-v0.2:featherless-ai",
+        // model: "mistralai/Mistral-7B-Instruct-v0.2:featherless-ai",
+        model: "mistralai/mistral-7b-instruct:free", // free tier
         messages,
         stream: false,
       }),
