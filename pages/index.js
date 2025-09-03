@@ -1,22 +1,33 @@
+"use client";
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import { Wrench, Car, Lightbulb, Cpu, Home } from "lucide-react"; // sample icons
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function HomePage() {
-  // Example affiliate categories (replace/add with yours)
-  const categories = [
-    { name: "Car Mods", icon: Car, link: "/category/car" },
-    { name: "Electronics", icon: Cpu, link: "/category/electronics" },
-    { name: "Home DIY", icon: Home, link: "/category/home" },
-    { name: "Lighting", icon: Lightbulb, link: "/category/lighting" },
-    { name: "Tools", icon: Wrench, link: "/category/tools" },
-  ];
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase.from("categories").select("*");
+      if (error) console.error(error);
+      else setCategories(data);
+    };
+    fetchCategories();
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-600 via-green-500 to-blue-700 text-white text-center py-6 shadow-lg">
         <h1 className="text-3xl font-bold tracking-wide">Utak-Atik</h1>
-        <p className="mt-1 text-sm text-green-100">DIY Made Simple with AI + Shopping Links</p>
+        <p className="mt-1 text-sm text-green-100">
+          DIY Made Simple with AI + Shopping Links
+        </p>
       </header>
 
       {/* Hero section */}
@@ -33,14 +44,14 @@ export default function HomePage() {
         </Link>
 
         {/* Categories grid */}
-        <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 gap-6 w-full max-w-3xl">
-          {categories.map((cat, i) => (
+        <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 w-full max-w-4xl">
+          {categories.map((cat) => (
             <Link
-              key={i}
-              href={cat.link}
+              key={cat.id}
+              href={`/category/${cat.slug}`}
               className="flex flex-col items-center bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-transform hover:-translate-y-1 border border-blue-100"
             >
-              <cat.icon className="w-10 h-10 text-blue-600 mb-3" />
+              <div className="text-4xl mb-3">{cat.icon}</div>
               <span className="font-medium text-gray-700">{cat.name}</span>
             </Link>
           ))}
