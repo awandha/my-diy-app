@@ -1,89 +1,120 @@
-"use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import { Lightbulb, Mic } from "lucide-react";
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "Hello! How can I help you today?" },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef(null);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const sendMessage = async (text) => {
+    const messageText = text || input;
+    if (!messageText.trim()) return;
 
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const newMessages = [...messages, { role: "user", content: input }];
+    const newMessages = [...messages, { role: "user", content: messageText }];
     setMessages(newMessages);
     setInput("");
-    setLoading(true);
 
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMessages }),
-      });
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: newMessages }),
+    });
 
-      const data = await response.json();
+    const data = await res.json();
+    setMessages([...newMessages, { role: "assistant", content: data.reply }]);
+  };
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.reply || "No response received." },
-      ]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "⚠️ Error: Could not fetch response." },
-      ]);
+  const startListening = () => {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("❌ Your browser does not support speech recognition.");
+      return;
     }
 
-    setLoading(false);
+    if (!recognitionRef.current) {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US"; // 👉 change to "id-ID" if you want Indonesian
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        // 🚀 Auto send right after user finishes speaking
+        sendMessage(transcript);
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Speech recognition error", event);
+        setListening(false);
+      };
+
+      recognition.onend = () => setListening(false);
+
+      recognitionRef.current = recognition;
+    }
+
+    if (!listening) {
+      recognitionRef.current.start();
+      setListening(true);
+    } else {
+      recognitionRef.current.stop();
+      setListening(false);
+    }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      <div className="flex-1 overflow-y-auto p-4">
-        {messages.map((msg, i) => (
+    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-600 via-green-500 to-blue-700 text-white text-center py-4 shadow-lg sticky top-0 z-10 flex items-center justify-center gap-2">
+        <Lightbulb className="w-6 h-6 text-yellow-300" />
+        <h1 className="text-2xl font-bold tracking-wide">Utak-Atik</h1>
+      </header>
+
+      {/* Chat messages area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {messages.map((msg, idx) => (
           <div
-            key={i}
-            className={`mb-3 flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            key={idx}
+            className={`p-3 rounded-2xl max-w-[80%] ${
+              msg.role === "user"
+                ? "ml-auto bg-gradient-to-r from-blue-400 to-blue-600 text-white shadow-md"
+                : "mr-auto bg-gradient-to-r from-green-300 to-green-500 text-white shadow-md"
+            }`}
           >
-            <div
-              className={`max-w-xs p-3 rounded-2xl ${
-                msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-br-none"
-                  : "bg-white text-gray-800 shadow rounded-bl-none"
-              }`}
-            >
-              {msg.content}
-            </div>
+            <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
         ))}
-        <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} className="p-4 border-t bg-white flex gap-2">
-        <input
-          type="text"
-          className="flex-1 border rounded-full p-2 px-4"
-          placeholder="Type your message..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={loading}
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-full"
-          disabled={loading}
-        >
-          {loading ? "Sending..." : "Send"}
-        </button>
-      </form>
+      {/* Floating Input Bar */}
+      <div className="sticky bottom-0 p-4 bg-transparent">
+        <div className="flex items-center gap-2 bg-white rounded-full shadow-lg p-2 border border-blue-200">
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            className="flex-1 p-2 px-4 rounded-full text-black focus:outline-none focus:ring-2 focus:ring-green-400"
+            placeholder="Type your message..."
+          />
+          <button
+            onClick={() => sendMessage()}
+            className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-green-500 hover:to-blue-500 transition-colors text-white px-4 py-2 rounded-full shadow-md"
+          >
+            Send
+          </button>
+          <button
+            onClick={startListening}
+            className={`p-2 rounded-full transition-colors ${
+              listening ? "bg-red-100" : "hover:bg-gray-100"
+            }`}
+            title="Voice input"
+          >
+            <Mic className={`w-5 h-5 ${listening ? "text-red-500" : "text-blue-600"}`} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
