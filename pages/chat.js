@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { Lightbulb, Mic } from "lucide-react";
+import FooterNav from "@/components/FooterNav";
 
 export default function ChatPage() {
   const [messages, setMessages] = useState([]);
@@ -117,6 +118,8 @@ export default function ChatPage() {
           </button>
         </div>
       </div>
+      {/* Footer */}
+    <FooterNav />
     </div>
   );
 }
