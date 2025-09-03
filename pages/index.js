@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
+import FooterNav from "@/components/FooterNav";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -59,9 +60,7 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-4 text-gray-500 text-sm border-t border-gray-200">
-        © {new Date().getFullYear()} Utak-Atik. All rights reserved.
-      </footer>
+      <FooterNav />
     </div>
   );
 }
