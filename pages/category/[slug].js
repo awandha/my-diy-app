@@ -1,10 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { createClient } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
-import { Home, Bot, FolderOpen } from "lucide-react"; // 👈 icons
 import FooterNav from "@/components/FooterNav";
 
 const supabase = createClient(
@@ -18,44 +17,49 @@ export default function CategoryPage() {
 
   const [category, setCategory] = useState(null);
   const [products, setProducts] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(""); // 🔍 search state
+  const [searchTerm, setSearchTerm] = useState("");
 
+  // ✅ useCallback for fetchProducts
+  const fetchProducts = useCallback(
+    async (keyword = "") => {
+      if (!slug) return;
+
+      // 1️⃣ get category by slug
+      const { data: catData, error: catError } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("slug", slug)
+        .single();
+
+      if (catError) {
+        console.error(catError);
+        return;
+      }
+      setCategory(catData);
+
+      // 2️⃣ get products with optional search
+      let query = supabase
+        .from("affiliate_products")
+        .select("*")
+        .eq("category_id", catData.id);
+
+      if (keyword.trim() !== "") {
+        query = query.or(
+          `name.ilike.%${keyword}%,description.ilike.%${keyword}%`
+        );
+      }
+
+      const { data: prodData, error: prodError } = await query;
+      if (prodError) console.error(prodError);
+      else setProducts(prodData);
+    },
+    [slug]
+  );
+
+  // ✅ no more ESLint error
   useEffect(() => {
-    if (!slug) return;
-    fetchProducts(); // fetch products on mount
-  }, [slug]);
-
-  const fetchProducts = async (keyword = "") => {
-    // 1️⃣ get category by slug
-    const { data: catData, error: catError } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("slug", slug)
-      .single();
-
-    if (catError) {
-      console.error(catError);
-      return;
-    }
-    setCategory(catData);
-
-    // 2️⃣ get products for that category with search
-    let query = supabase
-      .from("affiliate_products")
-      .select("*")
-      .eq("category_id", catData.id);
-
-    if (keyword.trim() !== "") {
-      query = query.or(
-        `name.ilike.%${keyword}%,description.ilike.%${keyword}%`
-      );
-    }
-
-    const { data: prodData, error: prodError } = await query;
-
-    if (prodError) console.error(prodError);
-    else setProducts(prodData);
-  };
+    fetchProducts();
+  }, [fetchProducts]);
 
   if (!category) return <p className="p-6">Loading...</p>;
 
@@ -143,15 +147,15 @@ export default function CategoryPage() {
                   {prod.description}
                 </p>
 
-                {/* Shop Now button */}
-                <a
+                {/* Shop Now button (✅ with Link) */}
+                <Link
                   href={prod.affiliate_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 inline-block text-center bg-gradient-to-r from-blue-500 to-green-500 text-white font-medium px-4 py-2 rounded-full shadow-md hover:from-green-500 hover:to-blue-500 transition-colors"
                 >
                   🛒 Shop Now
-                </a>
+                </Link>
               </div>
             ))}
           </div>
@@ -159,7 +163,7 @@ export default function CategoryPage() {
       </main>
 
       {/* Footer */}
-        <FooterNav />
+      <FooterNav />
     </div>
   );
 }
